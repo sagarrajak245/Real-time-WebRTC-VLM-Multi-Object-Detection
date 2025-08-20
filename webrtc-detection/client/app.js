@@ -8,7 +8,7 @@ class WebRTCDetectionClient {
         this.ctx = this.canvas.getContext('2d');
         this.video = document.getElementById('remoteVideo');
         this.isDebug = false;
-        this.mode = 'wasm'; // Default to WASM mode for low-resource
+        this.mode = 'wasm'; // Will be updated from server
         this.wasmInference = null;
         this.isStreamingActive = false;
         this.isPhoneConnected = false;
@@ -24,18 +24,41 @@ class WebRTCDetectionClient {
         this.setupEventListeners();
     }
     
+    async getServerConfig() {
+        try {
+            const response = await fetch('/health');
+            const config = await response.json();
+            
+            this.mode = config.mode || 'wasm';
+            console.log(`🎯 Server running in ${this.mode.toUpperCase()} mode`);
+            
+            return config;
+        } catch (error) {
+            console.warn('⚠️ Could not get server config, defaulting to WASM mode:', error);
+            this.mode = 'wasm';
+            return null;
+        }
+    }
+    
     async init() {
         console.log('🚀 Initializing WebRTC Detection Client (PC)');
         console.log('User Agent:', navigator.userAgent);
         
-        // Initialize WASM inference
-        this.wasmInference = new WASMInference();
-        await this.wasmInference.loadModel();
+        // Get server configuration first
+        await this.getServerConfig();
+        
+        // Initialize WASM inference only if in WASM mode
+        if (this.mode === 'wasm') {
+            this.wasmInference = new WASMInference();
+            await this.wasmInference.loadModel();
+        } else {
+            console.log('🖥️ Running in SERVER mode - inference will be done on server');
+        }
         
         this.setupSocketListeners();
         this.setupWebRTC();
         this.generateQRCode();
-        this.updateStatus('Ready for phone connection');
+        this.updateStatus(`Ready for phone connection (${this.mode.toUpperCase()} mode)`);
         this.updateConnectionIndicator(false);
         
         // Update mode display
@@ -96,7 +119,7 @@ class WebRTCDetectionClient {
             }
         }, 1000 / 15); // 15 FPS
     }
-     
+    
     stopDetection() {
         this.isStreamingActive = false;
         if (this.frameInterval) {
@@ -159,7 +182,8 @@ class WebRTCDetectionClient {
                 this.socket.emit('frame-data', frameData);
             }
         } else {
-            // Send to server for processing
+            // Send to server for processing (SERVER mode)
+            console.log('📤 Sending frame to server for processing');
             this.socket.emit('frame-data', frameData);
         }
     }
@@ -179,7 +203,7 @@ class WebRTCDetectionClient {
         this.socket.on('detections', (data) => {
             if (this.isStreamingActive) {
                 this.drawDetections(data.detections);
-                this.updateMetrics(data);
+                this.updateMetrics(data); 
             }
         });
         
@@ -526,11 +550,11 @@ class WebRTCDetectionClient {
     updateStatus(message) {
         document.getElementById('status').textContent = message;
         console.log('🔄 PC Status:', message);
-    }
+    } 
 }
 
 // Initialize when page loads
 document.addEventListener('DOMContentLoaded', () => {
-    const client = new WebRTCDetectionClient();
+    const client = new WebRTCDetectionClient();  
     client.init();
 });
