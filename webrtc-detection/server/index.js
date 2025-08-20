@@ -1,4 +1,4 @@
-// server.js (ES Modules)
+// server/index.js (ES Modules)
 import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
@@ -6,7 +6,8 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { writeFileSync } from 'fs';
 import qrcode from 'qrcode-terminal';
-import YOLOInference from './inference.js'; // your YOLO inference class
+import YOLOInference from './inference.js'; 
+import ngrok from "ngrok";
 
 // Fix __dirname in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -36,6 +37,12 @@ app.get('/', (req, res) => res.sendFile(join(__dirname, '../client/index.html'))
 app.get('/phone', (req, res) => res.sendFile(join(__dirname, '../client/phone.html')));
 app.get('/health', (req, res) => {
     res.json({ status: 'ok', mode: MODE, nodeVersion: process.version, timestamp: new Date() });
+});
+
+// Endpoint to expose the current phone URL (local or ngrok)
+let phoneUrlGlobal = `http://localhost:${PORT}/phone`;
+app.get("/api/url", (req, res) => {
+    res.json({ phoneUrl: phoneUrlGlobal });
 });
 
 // Benchmark storage
@@ -171,14 +178,22 @@ io.on('connection', (socket) => {
 });
 
 // Start server
-server.listen(PORT, () => {
+server.listen(PORT, async () => {
     console.log(`🚀 WebRTC Detection Server running on port ${PORT}`);
     console.log(`💻 PC Browser: http://localhost:${PORT}`);
-    console.log(`📱 Phone: http://localhost:${PORT}/phone`);
+    console.log(`📱 Phone (Local PC): http://localhost:${PORT}/phone`);
     console.log(`🎯 Mode: ${MODE}`);
     console.log(`⚡ Node.js: ${process.version}`);
 
-    const phoneUrl = `http://localhost:${PORT}/phone`;
-    console.log('\n📱 Scan this QR code with your phone:');
-    qrcode.generate(phoneUrl, { small: true });
+    // Start ngrok tunnel for external phone access
+    try {
+        const url = await ngrok.connect(PORT);
+        phoneUrlGlobal = `${url}/phone`;
+
+        console.log(`\n🌍 Public Access url connect using phone: ${phoneUrlGlobal}`);
+        console.log(`📱 Scan this QR code with your phone:`);
+        qrcode.generate(phoneUrlGlobal, { small: true });
+    } catch (err) {
+        console.error("❌ Failed to start ngrok tunnel:", err.message);
+    }
 });

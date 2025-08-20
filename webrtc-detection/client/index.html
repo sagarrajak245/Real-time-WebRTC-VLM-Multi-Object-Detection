@@ -173,7 +173,7 @@
             <ol>
                 <li>Make sure your phone is on the same WiFi network</li>
                 <li>Open Chrome (Android) or Safari (iOS) on your phone</li>
-                <li>Visit the URL below (or scan QR code if available)</li>
+                <li>Visit the URL below</li>
                 <li>Click "Start Camera" and allow camera access</li>
                 <li>Click "Connect to PC" to start streaming</li>
                 <li>Click "Start Detection" here to begin AI processing ✨</li>
@@ -181,9 +181,10 @@
         </div>
         
         <div class="qr-code">
-            <h3>📲 Scan with your phone:</h3>
-            <div id="qr-container">Generating QR code...</div>
-            <p>Or visit: <strong><span id="url">http://localhost:3000</span></strong></p>
+            <h2>📲 Open this Link on your phone:</h2>
+            <p id="urlDisplay" style="font-size: 16px; font-weight: bold; word-break: break-all;">
+                Fetching public URL...
+            </p>    
         </div>
         
         <div class="video-container">
@@ -202,5 +203,33 @@
     <script src="/socket.io/socket.io.js"></script>
     <script src="wasm-inference.js"></script>
     <script type="module" src="app.js"></script>
+
+    <!-- Simplified public URL fetching -->
+    <script>
+    (async () => {
+        console.log('🔍 Fetching phone connection URL...');
+
+        let phoneUrl = "No public URL available";
+
+        try {
+            const res = await fetch('/api/url', { cache: 'no-store' });
+            if (res.ok) {
+                const data = await res.json();
+                if (data && data.phoneUrl) {
+                    phoneUrl = data.phoneUrl;
+                    console.log('✅ Using public URL:', phoneUrl);
+                }
+            }
+        } catch (e) {
+            console.error('💥 Error fetching public URL:', e);
+        }
+
+        // Update display
+        const urlEl = document.getElementById('urlDisplay');
+        if (urlEl) {
+            urlEl.textContent = phoneUrl;
+        }
+    })();
+    </script>
 </body>
 </html>
