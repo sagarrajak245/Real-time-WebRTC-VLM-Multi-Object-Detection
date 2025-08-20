@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebRTC Object Detection</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .video-container { 
+            position: relative; 
+            display: inline-block; 
+            margin: 10px; 
+            border-radius: 12px; 
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        video { 
+            border: none; 
+            display: block;
+            max-width: 100%;
+            height: auto;
+        }
+        canvas { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            pointer-events: none; 
+        }
+        .controls { 
+            margin: 20px 0; 
+            text-align: center;
+        }
+        .controls button {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 12px 24px;
+            margin: 0 10px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        .controls button:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+        }
+        .status { 
+            padding: 20px; 
+            background: rgba(255,255,255,0.1); 
+            border-radius: 12px; 
+            margin: 20px 0;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        .status-item {
+            background: rgba(0,0,0,0.2);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .status-label { font-size: 0.9em; opacity: 0.8; }
+        .status-value { font-size: 1.4em; font-weight: bold; margin-top: 5px; }
+        .qr-code { 
+            background: white; 
+            color: black;
+            padding: 30px; 
+            text-align: center; 
+            border-radius: 12px;
+            margin: 20px 0;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+        .phone-instructions {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            border-left: 4px solid #4CAF50;
+        }
+        .detection-count {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.8em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 WebRTC Real-time Object Detection</h1>
+            <p>Stream from your phone camera and see live AI detection overlays</p>
+        </div>
+        
+        <div class="status">
+            <div class="status-grid">
+                <div class="status-item">
+                    <div class="status-label">Connection</div>
+                    <div class="status-value" id="status">Initializing...</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-label">Mode</div>
+                    <div class="status-value" id="mode">WASM</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-label">FPS</div>
+                    <div class="status-value" id="fps">0</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-label">Latency</div>
+                    <div class="status-value" id="latency">0ms</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-label">Objects</div>
+                    <div class="status-value" id="objectCount">0</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="phone-instructions">
+            <h3>📱 How to connect your phone:</h3>
+            <ol>
+                <li>Make sure your phone is on the same WiFi network</li>
+                <li>Open Chrome (Android) or Safari (iOS) on your phone</li>
+                <li>Visit the URL below (or scan QR code if available)</li>
+                <li>Click "Start Camera" and allow camera access</li>
+                <li>Click "Connect to PC" to start streaming</li>
+                <li>Point your camera at objects and watch detection here! ✨</li>
+            </ol>
+        </div>
+        
+        <div class="qr-code">
+            <h3>📲 Scan with your phone:</h3>
+            <div id="qr-container">Generating QR code...</div>
+            <p>Or visit: <strong><span id="url">http://localhost:3000</span></strong></p>
+        </div>
+        
+        <div class="video-container">
+            <video id="remoteVideo" width="640" height="480" autoplay muted playsinline></video>
+            <canvas id="overlay" width="640" height="480"></canvas>
+            <div class="detection-count" id="detectionCount">0 objects</div>
+        </div>
+        
+        <div class="controls">
+            <button id="benchBtn">📊 Run Benchmark</button>
+            <button id="debugBtn">🔧 Toggle Debug</button>
+        </div>
+    </div>
+    
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="wasm-inference.js"></script>
+    <script type="module" src="app.js"></script>
+</body>
+</html>

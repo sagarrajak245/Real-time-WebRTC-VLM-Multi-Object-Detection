@@ -1,0 +1,39 @@
+{
+  "name": "webrtc-detection",
+  "version": "1.0.0",
+  "description": "Real-time WebRTC Multi-Object Detection Demo",
+  "main": "server/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "nodemon server/index.js",
+    "bench": "./bench/run_bench.sh",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "webrtc",
+    "yolo",
+    "detection",
+    "real-time",
+    "onnx"
+  ],
+  "author": "Your Name",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^5.1.0",
+    "socket.io": "^4.8.1",
+    "jimp": "^0.22.10",
+    "qrcode-terminal": "^0.12.0",
+    "cors": "^2.8.5",
+    "onnxruntime-web": "^1.19.0"
+  },
+  "optionalDependencies": {
+    "onnxruntime-node": "^1.19.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phone Camera Stream</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            min-height: 100vh;
+        }
+        .phone-container { 
+            max-width: 400px; 
+            margin: 0 auto; 
+            padding: 20px;
+        }
+        video { 
+            width: 100%; 
+            max-width: 350px; 
+            border-radius: 12px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            margin: 20px 0;
+        }
+        button {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 15px 30px;
+            margin: 10px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            font-size: 16px;
+            width: 100%;
+            max-width: 300px;
+        }
+        button:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .status {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 12px;
+            margin: 20px 0;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .instructions {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <div class="phone-container">
+        <h1>📹 Camera Streaming</h1>
+        <p>Stream your camera to the PC browser for real-time object detection</p>
+        
+        <div class="instructions">
+            <h3>📋 Instructions:</h3>
+            <ol>
+                <li>Click "Start Camera" below</li>
+                <li>Allow camera access when prompted</li>
+                <li>Click "Connect to PC" to start streaming</li>
+                <li>Point camera at objects and watch detection on PC!</li>
+            </ol>
+        </div>
+        
+        <video id="localVideo" autoplay muted playsinline style="display: none;"></video>
+        
+        <div class="status">
+            <strong>Status:</strong> <span id="connectionStatus">Ready to start</span>
+        </div>
+        
+        <button id="startCameraBtn">📷 Start Camera</button>
+        <button id="connectBtn" disabled>🔗 Connect to PC</button>
+        <button id="switchCameraBtn" style="display: none;">🔄 Switch Camera</button>
+    </div>
+    
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        class PhoneStreamingClient {
+            constructor() {
+                this.socket = io();
+                this.peerConnection = null;
+                this.localStream = null;
+                this.isConnected = false;
+                this.currentFacingMode = 'environment';
+                
+                this.setupEventListeners();
+                this.setupSocketListeners();
+                this.setupWebRTC();
+            }
+            
+            setupEventListeners() {
+                document.getElementById('startCameraBtn').addEventListener('click', () => {
+                    this.startCamera();
+                });
+                
+                document.getElementById('connectBtn').addEventListener('click', () => {
+                    this.connectToPC();
+                });
+                
+                document.getElementById('switchCameraBtn').addEventListener('click', () => {
+                    this.switchCamera();
+                });
+            }
+            
+            async startCamera() {
+                try {
+                    this.updateStatus('Requesting camera access...');
+                    
+                    const constraints = {
+                        video: { 
+                            width: { ideal: 640 },
+                            height: { ideal: 480 },
+                            facingMode: this.currentFacingMode
+                        },
+                        audio: false
+                    };
+                    
+                    this.localStream = await navigator.mediaDevices.getUserMedia(constraints);
+                    
+                    const video = document.getElementById('localVideo');
+                    video.srcObject = this.localStream;
+                    video.style.display = 'block';
+                    
+                    document.getElementById('startCameraBtn').disabled = true;
+                    document.getElementById('connectBtn').disabled = false;
+                    document.getElementById('switchCameraBtn').style.display = 'inline-block';
+                    
+                    this.updateStatus('Camera ready - click Connect to PC');
+                    
+                } catch (error) {
+                    console.error('Camera access failed:', error);
+                    this.updateStatus('Camera access failed - please allow camera permissions');
+                }
+            }
+            
+            async switchCamera() {
+                if (this.localStream) {
+                    this.localStream.getTracks().forEach(track => track.stop());
+                }
+                
+                this.currentFacingMode = this.currentFacingMode === 'environment' ? 'user' : 'environment';
+                
+                await this.startCamera();
+                
+                if (this.isConnected) {
+                    // Re-add tracks to peer connection
+                    this.addTracksToConnection();
+                }
+            }
+            
+            setupWebRTC() {
+                const config = {
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' }
+                    ]
+                };
+                
+                this.peerConnection = new RTCPeerConnection(config);
+                
+                this.peerConnection.onicecandidate = (event) => {
+                    if (event.candidate) {
+                        console.log('📡 Sending ICE candidate to PC');
+                        this.socket.emit('phone-ice-candidate', event.candidate);
+                    }
+                };
+                
+                this.peerConnection.onconnectionstatechange = () => {
+                    console.log('📡 Connection state:', this.peerConnection.connectionState);
+                    this.updateStatus(`Connection: ${this.peerConnection.connectionState}`);
+                    
+                    if (this.peerConnection.connectionState === 'connected') {
+                        this.isConnected = true;
+                        this.updateStatus('✅ Connected to PC - streaming video!');
+                    }
+                };
+            }
+            
+            setupSocketListeners() {
+                this.socket.on('connect', () => {
+                    console.log('📡 Connected to server');
+                });
+                
+                this.socket.on('pc-answer', async (answer) => {
+                    console.log('📡 Received answer from PC');
+                    try {
+                        await this.peerConnection.setRemoteDescription(answer);
+                        this.updateStatus('🔗 Establishing connection...');
+                    } catch (error) {
+                        console.error('Error setting remote description:', error);
+                    }
+                });
+                
+                this.socket.on('pc-ice-candidate', async (candidate) => {
+                    console.log('📡 Received ICE candidate from PC');
+                    try {
+                        await this.peerConnection.addIceCandidate(candidate);
+                    } catch (error) {
+                        console.error('Error adding ICE candidate:', error);
+                    }
+                });
+            }
+            
+            async connectToPC() {
+                if (!this.localStream) {
+                    this.updateStatus('Please start camera first');
+                    return;
+                }
+                
+                try {
+                    this.updateStatus('Connecting to PC...');
+                    
+                    // Add local stream to peer connection
+                    this.addTracksToConnection();
+                    
+                    // Create offer
+                    const offer = await this.peerConnection.createOffer();
+                    await this.peerConnection.setLocalDescription(offer);
+                    
+                    // Send offer to PC via server
+                    this.socket.emit('phone-offer', offer);
+                    
+                    document.getElementById('connectBtn').disabled = true;
+                    
+                } catch (error) {
+                    console.error('Connection failed:', error);
+                    this.updateStatus('Connection failed - please try again');
+                    document.getElementById('connectBtn').disabled = false;
+                }
+            }
+            
+            addTracksToConnection() {
+                // Remove existing tracks
+                this.peerConnection.getSenders().forEach(sender => {
+                    if (sender.track) {
+                        this.peerConnection.removeTrack(sender);
+                    }
+                });
+                
+                // Add current stream tracks
+                this.localStream.getTracks().forEach(track => {
+                    console.log('📹 Adding track to peer connection:', track.kind);
+                    this.peerConnection.addTrack(track, this.localStream);
+                });
+            }
+            
+            updateStatus(message) {
+                document.getElementById('connectionStatus').textContent = message;
+                console.log('📱 Phone Status:', message);
+            }
+        }
+        
+        // Initialize phone client when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new PhoneStreamingClient();
+        });
+    </script>
+</body>
+</html>
