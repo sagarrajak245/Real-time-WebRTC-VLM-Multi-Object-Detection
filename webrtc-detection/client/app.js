@@ -11,6 +11,7 @@ class WebRTCDetectionClient {
         this.mode = 'wasm'; // Default to WASM mode for low-resource
         this.wasmInference = null;
         this.isStreamingActive = false;
+        this.isPhoneConnected = false;
         
         this.metrics = {
             fps: 0,
@@ -35,13 +36,17 @@ class WebRTCDetectionClient {
         this.setupWebRTC();
         this.generateQRCode();
         this.updateStatus('Ready for phone connection');
+        this.updateConnectionIndicator(false);
         
         // Update mode display
         document.getElementById('mode').textContent = this.mode.toUpperCase();
     }
     
     setupEventListeners() {
-        // Camera is now handled by phone - no start button needed
+        // Start/Stop Detection Button
+        document.getElementById('startBtn').addEventListener('click', () => {
+            this.toggleDetection();
+        });
         
         document.getElementById('benchBtn').addEventListener('click', () => {
             this.runBenchmark();
@@ -54,15 +59,25 @@ class WebRTCDetectionClient {
     
     toggleDetection() {
         const btn = document.getElementById('startBtn');
+        
+        if (!this.isPhoneConnected) {
+            this.updateStatus('Please connect your phone first');
+            return;
+        }
+        
         if (this.isStreamingActive) {
             this.stopDetection();
             btn.textContent = '📹 Start Detection';
+            btn.classList.remove('danger-btn');
+            btn.classList.add('primary-btn');
         } else {
-            if (this.remoteStream) {
+            if (this.remoteStream && this.video.videoWidth > 0) {
                 this.startFrameCapture();
                 btn.textContent = '⏹️ Stop Detection';
+                btn.classList.remove('primary-btn');
+                btn.classList.add('danger-btn');
             } else {
-                this.updateStatus('Waiting for phone connection...');
+                this.updateStatus('No video stream available from phone');
             }
         }
     }
@@ -71,25 +86,35 @@ class WebRTCDetectionClient {
         if (this.isStreamingActive) return;
         
         this.isStreamingActive = true;
-        this.updateStatus('Detection active - processing frames');
+        this.updateStatus('🔥 Detection active - processing frames');
+        document.getElementById('detectionCount').textContent = 'Processing...';
         
         // Capture frames at 15 FPS for detection
         this.frameInterval = setInterval(() => {
             if (this.video.videoWidth > 0 && this.isStreamingActive) {
                 this.captureAndSendFrame();
             }
-        }, 1000 / 15);
+        }, 1000 / 15); // 15 FPS
     }
-    
+     
     stopDetection() {
         this.isStreamingActive = false;
         if (this.frameInterval) {
             clearInterval(this.frameInterval);
+            this.frameInterval = null;
         }
-        this.updateStatus('Detection stopped');
+        
+        // Clear overlay
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        this.updateStatus(this.isPhoneConnected ? '✅ Phone connected - ready to detect' : 'Phone disconnected');
+        document.getElementById('detectionCount').textContent = this.isPhoneConnected ? '0 objects' : 'Waiting for stream...';
+        document.getElementById('objectCount').textContent = '0';
     }
     
     async captureAndSendFrame() {
+        if (!this.video.videoWidth || !this.isStreamingActive) return;
+        
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         
@@ -148,11 +173,14 @@ class WebRTCDetectionClient {
         this.socket.on('disconnect', () => {
             console.log('📡 Disconnected from server');
             this.updateStatus('Disconnected from server');
+            this.updateConnectionIndicator(false);
         });
         
         this.socket.on('detections', (data) => {
-            this.drawDetections(data.detections);
-            this.updateMetrics(data);
+            if (this.isStreamingActive) {
+                this.drawDetections(data.detections);
+                this.updateMetrics(data);
+            }
         });
         
         // WebRTC signaling from phone
@@ -193,25 +221,57 @@ class WebRTCDetectionClient {
             console.log('📺 Received remote stream from phone');
             this.remoteStream = event.streams[0];
             this.video.srcObject = this.remoteStream;
-            this.updateStatus('✅ Connected to phone - video streaming!');
             
-            // Auto-start detection when stream is received
-            setTimeout(() => {
-                document.getElementById('startBtn').textContent = '📹 Start Detection';
-                document.getElementById('startBtn').disabled = false;
-            }, 1000);
+            // Wait for video metadata to load
+            this.video.onloadedmetadata = () => {
+                console.log('📺 Video metadata loaded:', this.video.videoWidth, 'x', this.video.videoHeight);
+                this.enableDetectionButton();
+            };
         };
         
         this.peerConnection.onconnectionstatechange = () => {
             console.log('📡 PC Connection state:', this.peerConnection.connectionState);
             
             if (this.peerConnection.connectionState === 'connected') {
-                this.updateStatus('🔗 Phone connected successfully');
-            } else if (this.peerConnection.connectionState === 'disconnected') {
+                this.isPhoneConnected = true;
+                this.updateStatus('✅ Phone connected - ready to detect');
+                this.updateConnectionIndicator(true);
+                this.enableDetectionButton();
+            } else if (this.peerConnection.connectionState === 'disconnected' || 
+                      this.peerConnection.connectionState === 'failed') {
+                this.isPhoneConnected = false;
                 this.updateStatus('📱 Phone disconnected');
+                this.updateConnectionIndicator(false);
+                this.disableDetectionButton();
                 this.stopDetection();
             }
         };
+    }
+    
+    enableDetectionButton() {
+        const btn = document.getElementById('startBtn');
+        btn.disabled = false;
+        btn.textContent = '📹 Start Detection';
+        btn.classList.remove('danger-btn');
+        btn.classList.add('primary-btn');
+        document.getElementById('detectionCount').textContent = '0 objects';
+    }
+    
+    disableDetectionButton() {
+        const btn = document.getElementById('startBtn');
+        btn.disabled = true;
+        btn.textContent = '📱 Waiting for Phone...';
+        btn.classList.remove('primary-btn', 'danger-btn');
+        document.getElementById('detectionCount').textContent = 'Waiting for stream...';
+    }
+    
+    updateConnectionIndicator(connected) {
+        const indicator = document.getElementById('connectionIndicator');
+        if (connected) {
+            indicator.classList.add('connected');
+        } else {
+            indicator.classList.remove('connected');
+        }
     }
     
     async handlePhoneOffer(offer) {
@@ -235,6 +295,7 @@ class WebRTCDetectionClient {
         
         if (!detections || detections.length === 0) {
             document.getElementById('detectionCount').textContent = '0 objects';
+            document.getElementById('objectCount').textContent = '0';
             return;
         }
         
@@ -277,7 +338,8 @@ class WebRTCDetectionClient {
         });
         
         // Update detection count
-        document.getElementById('detectionCount').textContent = `${detections.length} object${detections.length !== 1 ? 's' : ''}`;
+        const objectText = `${detections.length} object${detections.length !== 1 ? 's' : ''}`;
+        document.getElementById('detectionCount').textContent = objectText;
         document.getElementById('objectCount').textContent = detections.length;
     }
     
@@ -331,7 +393,7 @@ class WebRTCDetectionClient {
                     <li>Open the URL above on your phone</li>
                     <li>Allow camera access</li>
                     <li>Click "Connect to PC"</li>
-                    <li>Watch real-time detection here!</li>
+                    <li>Click "Start Detection" here!</li>
                 </ol>
             </div>
         `;
@@ -344,20 +406,19 @@ class WebRTCDetectionClient {
     }
     
     async runBenchmark() {
-        if (!this.remoteStream) {
+        if (!this.isPhoneConnected) {
             alert('Please connect your phone first before running benchmark');
+            return;
+        }
+        
+        if (!this.isStreamingActive) {
+            alert('Please start detection first before running benchmark');
             return;
         }
         
         try {
             this.updateStatus('Starting 30-second benchmark...');
             console.log('🔬 Starting benchmark...');
-            
-            // Ensure detection is running
-            if (!this.isStreamingActive) {
-                this.startFrameCapture();
-                document.getElementById('startBtn').textContent = '⏹️ Stop Detection';
-            }
             
             // Start benchmark on server
             const response = await fetch('/api/benchmark/start', {

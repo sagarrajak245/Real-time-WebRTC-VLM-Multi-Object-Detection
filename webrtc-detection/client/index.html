@@ -50,9 +50,14 @@
             transition: all 0.3s ease;
             font-weight: 500;
         }
-        .controls button:hover {
+        .controls button:hover:not(:disabled) {
             background: rgba(255,255,255,0.3);
             transform: translateY(-2px);
+        }
+        .controls button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
         }
         .status { 
             padding: 20px; 
@@ -101,6 +106,31 @@
             border-radius: 15px;
             font-size: 0.8em;
         }
+        .connection-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+            background: #ff4444;
+        }
+        .connection-indicator.connected {
+            background: #44ff44;
+        }
+        .primary-btn {
+            background: rgba(76, 175, 80, 0.8) !important;
+            border: 1px solid rgba(76, 175, 80, 1) !important;
+        }
+        .primary-btn:hover:not(:disabled) {
+            background: rgba(76, 175, 80, 1) !important;
+        }
+        .danger-btn {
+            background: rgba(244, 67, 54, 0.8) !important;
+            border: 1px solid rgba(244, 67, 54, 1) !important;
+        }
+        .danger-btn:hover:not(:disabled) {
+            background: rgba(244, 67, 54, 1) !important;
+        }
     </style>
 </head>
 <body>
@@ -114,7 +144,10 @@
             <div class="status-grid">
                 <div class="status-item">
                     <div class="status-label">Connection</div>
-                    <div class="status-value" id="status">Initializing...</div>
+                    <div class="status-value">
+                        <span class="connection-indicator" id="connectionIndicator"></span>
+                        <span id="status">Initializing...</span>
+                    </div>
                 </div>
                 <div class="status-item">
                     <div class="status-label">Mode</div>
@@ -143,7 +176,7 @@
                 <li>Visit the URL below (or scan QR code if available)</li>
                 <li>Click "Start Camera" and allow camera access</li>
                 <li>Click "Connect to PC" to start streaming</li>
-                <li>Point your camera at objects and watch detection here! ✨</li>
+                <li>Click "Start Detection" here to begin AI processing ✨</li>
             </ol>
         </div>
         
@@ -154,12 +187,13 @@
         </div>
         
         <div class="video-container">
-            <video id="remoteVideo" width="640" height="480" autoplay muted playsinline></video>
+            <video id="remoteVideo" width="640" height="480" autoplay muted playsinline style="background: #000;"></video>
             <canvas id="overlay" width="640" height="480"></canvas>
-            <div class="detection-count" id="detectionCount">0 objects</div>
+            <div class="detection-count" id="detectionCount">Waiting for stream...</div>
         </div>
         
         <div class="controls">
+            <button id="startBtn" class="primary-btn" disabled>📱 Waiting for Phone...</button>
             <button id="benchBtn">📊 Run Benchmark</button>
             <button id="debugBtn">🔧 Toggle Debug</button>
         </div>
