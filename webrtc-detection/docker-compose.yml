@@ -1,24 +1,18 @@
+version: '3.8'
 
 services:
-  webrtc-detection:
+  webrtc-detection-app:
     build: .
+    container_name: webrtc_detection_service
     ports:
       - "3000:3000"
-    environment:
-      - NODE_ENV=production
-      - MODE=wasm
-      - LOG_LEVEL=info
     volumes:
-      - ./logs:/app/logs
-      - ./metrics.json:/app/metrics.json
-    restart: unless-stopped
-    
-  # Optional: Add nginx for production
-  # nginx:
-  #   image: nginx:alpine
-  #   ports:
-  #     - "80:80"
-  #   volumes:
-  #     - ./nginx.conf:/etc/nginx/nginx.conf
-  #   depends_on:
-  #     - webrtc-detection
+      - ./server:/usr/src/app/server
+      - ./client:/usr/src/app/client
+      - ./public:/usr/src/app/public
+      - ./bench:/usr/src/app/bench
+    environment:
+      - MODE=wasm
+      # ✅ CORRECT: Reads the token from the .env file
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN} 
+    command: npm run dev 

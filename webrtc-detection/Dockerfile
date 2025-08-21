@@ -1,33 +1,21 @@
+# Use an official Node.js runtime as a parent image (version 20 as required by package.json)
 FROM node:20-slim
 
-# Install system dependencies for ONNX Runtime
-RUN apt-get update && apt-get install -y \
-    python3 \
-    make \
-    g++ \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+# Set the working directory in the container
+WORKDIR /usr/src/app
 
-WORKDIR /app
-
-# Copy package files
+# Copy package.json and package-lock.json to leverage Docker cache
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --omit=dev --ignore-optional
+# Install app dependencies, including optional ones for server mode
+# The --include=optional flag ensures onnxruntime-node is installed
+RUN npm install --include=optional
 
-# Copy application code
+# Bundle app source
 COPY . .
 
-# Create logs directory
-RUN mkdir -p logs
-
-# Expose port
+# Your app binds to port 3000, so expose it
 EXPOSE 3000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:3000/health || exit 1
-
-# Start command
-CMD ["npm", "start"]
+# Define the command to run your app 
+CMD [ "node", "server/index.js" ]
