@@ -357,4 +357,4 @@ class WASMInference {
 }
 
 // Export for use in main app
-window.WASMInference = WASMInference;
+window.WASMInference = WASMInference; 
