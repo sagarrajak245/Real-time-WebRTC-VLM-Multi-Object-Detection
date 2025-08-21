@@ -8,7 +8,7 @@ class WebRTCDetectionClient {
         this.ctx = this.canvas.getContext('2d');
         this.video = document.getElementById('remoteVideo');
         this.isDebug = false;
-        this.mode = 'wasm'; // Will be updated from server
+        this.mode = 'wasm'; // Default, will be updated from server
         this.wasmInference = null;
         this.isStreamingActive = false;
         this.isPhoneConnected = false;
@@ -26,33 +26,59 @@ class WebRTCDetectionClient {
     
     async getServerConfig() {
         try {
+            console.log('Fetching server config from /health...');
             const response = await fetch('/health');
             const config = await response.json();
             
+            console.log('Server config received:', config);
+            
             this.mode = config.mode || 'wasm';
-            console.log(`🎯 Server running in ${this.mode.toUpperCase()} mode`);
+            console.log(`Setting client mode to: ${this.mode.toUpperCase()}`);
+            
+            // UPDATE THE UI MODE DISPLAY HERE
+            this.updateModeDisplay();
             
             return config;
         } catch (error) {
-            console.warn('⚠️ Could not get server config, defaulting to WASM mode:', error);
+            console.warn('Could not get server config, defaulting to WASM mode:', error);
             this.mode = 'wasm';
+            this.updateModeDisplay();
             return null;
         }
     }
     
+    updateModeDisplay() {
+        const modeElement = document.getElementById('mode');
+        if (modeElement) {
+            const displayMode = this.mode.toUpperCase();
+            modeElement.textContent = displayMode;
+            console.log(`UI mode updated to: ${displayMode}`);
+            
+            // Also update status message to reflect current mode
+            if (this.isPhoneConnected) {
+                this.updateStatus(`Phone connected - ready to detect (${displayMode} mode)`);
+            } else {
+                this.updateStatus(`Ready for phone connection (${displayMode} mode)`);
+            }
+        } else {
+            console.error('Mode element not found in DOM!');
+        }
+    }
+    
     async init() {
-        console.log('🚀 Initializing WebRTC Detection Client (PC)');
+        console.log('Initializing WebRTC Detection Client (PC)');
         console.log('User Agent:', navigator.userAgent);
         
-        // Get server configuration first
+        // Get server configuration first - THIS WILL UPDATE THE UI
         await this.getServerConfig();
         
         // Initialize WASM inference only if in WASM mode
         if (this.mode === 'wasm') {
+            console.log('Initializing WASM inference...');
             this.wasmInference = new WASMInference();
             await this.wasmInference.loadModel();
         } else {
-            console.log('🖥️ Running in SERVER mode - inference will be done on server');
+            console.log('Running in SERVER mode - inference will be done on server');
         }
         
         this.setupSocketListeners();
@@ -60,9 +86,6 @@ class WebRTCDetectionClient {
         this.generateQRCode();
         this.updateStatus(`Ready for phone connection (${this.mode.toUpperCase()} mode)`);
         this.updateConnectionIndicator(false);
-        
-        // Update mode display
-        document.getElementById('mode').textContent = this.mode.toUpperCase();
     }
     
     setupEventListeners() {
@@ -90,13 +113,13 @@ class WebRTCDetectionClient {
         
         if (this.isStreamingActive) {
             this.stopDetection();
-            btn.textContent = '📹 Start Detection';
+            btn.textContent = 'Start Detection';
             btn.classList.remove('danger-btn');
             btn.classList.add('primary-btn');
         } else {
             if (this.remoteStream && this.video.videoWidth > 0) {
                 this.startFrameCapture();
-                btn.textContent = '⏹️ Stop Detection';
+                btn.textContent = 'Stop Detection';
                 btn.classList.remove('primary-btn');
                 btn.classList.add('danger-btn');
             } else {
@@ -109,7 +132,7 @@ class WebRTCDetectionClient {
         if (this.isStreamingActive) return;
         
         this.isStreamingActive = true;
-        this.updateStatus('🔥 Detection active - processing frames');
+        this.updateStatus(`Detection active - processing frames (${this.mode.toUpperCase()} mode)`);
         document.getElementById('detectionCount').textContent = 'Processing...';
         
         // Capture frames at 15 FPS for detection
@@ -130,7 +153,10 @@ class WebRTCDetectionClient {
         // Clear overlay
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         
-        this.updateStatus(this.isPhoneConnected ? '✅ Phone connected - ready to detect' : 'Phone disconnected');
+        this.updateStatus(this.isPhoneConnected ? 
+            `Phone connected - ready to detect (${this.mode.toUpperCase()} mode)` : 
+            'Phone disconnected'
+        );
         document.getElementById('detectionCount').textContent = this.isPhoneConnected ? '0 objects' : 'Waiting for stream...';
         document.getElementById('objectCount').textContent = '0';
     }
@@ -159,6 +185,7 @@ class WebRTCDetectionClient {
         if (this.mode === 'wasm' && this.wasmInference) {
             // Use WASM inference on client side
             try {
+                console.log('Processing frame with WASM inference...');
                 const detectionResult = await this.wasmInference.detect(imageData, frameId, captureTs);
                 this.drawDetections(detectionResult.detections);
                 this.updateMetrics(detectionResult);
@@ -177,31 +204,33 @@ class WebRTCDetectionClient {
                     }).catch(console.error);
                 }
             } catch (error) {
-                console.error('❌ WASM inference failed:', error);
+                console.error('WASM inference failed:', error);
                 // Fall back to server processing
+                console.log('Falling back to server processing...');
                 this.socket.emit('frame-data', frameData);
             }
         } else {
             // Send to server for processing (SERVER mode)
-            console.log('📤 Sending frame to server for processing');
+            console.log('Sending frame to server for processing (SERVER mode)');
             this.socket.emit('frame-data', frameData);
         }
     }
     
     setupSocketListeners() {
         this.socket.on('connect', () => {
-            console.log('📡 Connected to server');
-            this.updateStatus('Connected to server - waiting for phone');
+            console.log('Connected to server');
+            this.updateStatus(`Connected to server - waiting for phone (${this.mode.toUpperCase()} mode)`);
         });
         
         this.socket.on('disconnect', () => {
-            console.log('📡 Disconnected from server');
+            console.log('Disconnected from server');
             this.updateStatus('Disconnected from server');
             this.updateConnectionIndicator(false);
         });
         
         this.socket.on('detections', (data) => {
             if (this.isStreamingActive) {
+                console.log(`Received detections from server (${this.mode.toUpperCase()} mode):`, data.detections?.length || 0, 'objects');
                 this.drawDetections(data.detections);
                 this.updateMetrics(data); 
             }
@@ -209,12 +238,12 @@ class WebRTCDetectionClient {
         
         // WebRTC signaling from phone
         this.socket.on('phone-offer', async (offer) => {
-            console.log('📡 Received offer from phone');
+            console.log('Received offer from phone');
             await this.handlePhoneOffer(offer);
         });
         
         this.socket.on('phone-ice-candidate', async (candidate) => {
-            console.log('🧊 Received ICE candidate from phone');
+            console.log('Received ICE candidate from phone');
             try {
                 await this.peerConnection.addIceCandidate(candidate);
             } catch (error) {
@@ -236,46 +265,48 @@ class WebRTCDetectionClient {
         
         this.peerConnection.onicecandidate = (event) => {
             if (event.candidate) {
-                console.log('📡 Sending ICE candidate to phone');
+                console.log('Sending ICE candidate to phone');
                 this.socket.emit('pc-ice-candidate', event.candidate);
             }
         };
         
         this.peerConnection.ontrack = (event) => {
-            console.log('📺 Received remote stream from phone');
+            console.log('Received remote stream from phone');
             this.remoteStream = event.streams[0];
             this.video.srcObject = this.remoteStream;
             
             // Wait for video metadata to load
             this.video.onloadedmetadata = () => {
-                console.log('📺 Video metadata loaded:', this.video.videoWidth, 'x', this.video.videoHeight);
+                console.log('Video metadata loaded:', this.video.videoWidth, 'x', this.video.videoHeight);
                 this.enableDetectionButton();
             };
         };
         
         this.peerConnection.onconnectionstatechange = () => {
-            console.log('📡 PC Connection state:', this.peerConnection.connectionState);
-            
+            console.log('PC Connection state:', this.peerConnection.connectionState);
+        
             if (this.peerConnection.connectionState === 'connected') {
                 this.isPhoneConnected = true;
-                this.updateStatus('✅ Phone connected - ready to detect');
+                this.updateStatus(`Phone connected - ready to detect (${this.mode.toUpperCase()} mode)`);
                 this.updateConnectionIndicator(true);
                 this.enableDetectionButton();
-            } else if (this.peerConnection.connectionState === 'disconnected' || 
-                      this.peerConnection.connectionState === 'failed') {
+            } else if (
+                this.peerConnection.connectionState === 'disconnected' || 
+                this.peerConnection.connectionState === 'failed'
+            ) {
                 this.isPhoneConnected = false;
-                this.updateStatus('📱 Phone disconnected');
+                this.updateStatus('Phone disconnected');
                 this.updateConnectionIndicator(false);
                 this.disableDetectionButton();
                 this.stopDetection();
             }
         };
-    }
+    } // FIXED: Added missing closing brace
     
     enableDetectionButton() {
         const btn = document.getElementById('startBtn');
         btn.disabled = false;
-        btn.textContent = '📹 Start Detection';
+        btn.textContent = 'Start Detection';
         btn.classList.remove('danger-btn');
         btn.classList.add('primary-btn');
         document.getElementById('detectionCount').textContent = '0 objects';
@@ -284,7 +315,7 @@ class WebRTCDetectionClient {
     disableDetectionButton() {
         const btn = document.getElementById('startBtn');
         btn.disabled = true;
-        btn.textContent = '📱 Waiting for Phone...';
+        btn.textContent = 'Waiting for Phone...';
         btn.classList.remove('primary-btn', 'danger-btn');
         document.getElementById('detectionCount').textContent = 'Waiting for stream...';
     }
@@ -305,11 +336,11 @@ class WebRTCDetectionClient {
             await this.peerConnection.setLocalDescription(answer);
             
             this.socket.emit('pc-answer', answer);
-            this.updateStatus('🔗 Connecting to phone...');
+            this.updateStatus(`Connecting to phone... (${this.mode.toUpperCase()} mode)`);
             
         } catch (error) {
             console.error('Error handling phone offer:', error);
-            this.updateStatus('❌ Failed to connect to phone');
+            this.updateStatus('Failed to connect to phone');
         }
     }
     
@@ -389,11 +420,12 @@ class WebRTCDetectionClient {
         document.getElementById('latency').textContent = this.metrics.latency + 'ms';
         
         if (this.isDebug) {
-            console.log('📊 Metrics:', {
+            console.log('Metrics:', {
                 fps: this.metrics.fps,
                 latency: this.metrics.latency,
                 totalObjects: this.metrics.totalObjects,
-                frameId: data.frame_id
+                frameId: data.frame_id,
+                mode: this.mode
             });
         }
     }
@@ -404,7 +436,7 @@ class WebRTCDetectionClient {
         
         // Enhanced QR code generation message
         document.getElementById('qr-container').innerHTML = `
-            <h3>📱 Connect Your Phone:</h3>
+            <h3>Connect Your Phone:</h3>
             <div style="background: #f0f0f0; padding: 20px; margin: 10px 0; border-radius: 8px;">
                 <p style="margin: 0; font-size: 1.2em; font-weight: bold; color: #333;">${phoneUrl}</p>
             </div>
@@ -425,7 +457,7 @@ class WebRTCDetectionClient {
     
     toggleDebug() {
         this.isDebug = !this.isDebug;
-        document.getElementById('debugBtn').textContent = this.isDebug ? '🔧 Debug: ON' : '🔧 Toggle Debug';
+        document.getElementById('debugBtn').textContent = this.isDebug ? 'Debug: ON' : 'Toggle Debug';
         console.log('Debug mode:', this.isDebug ? 'enabled' : 'disabled');
     }
     
@@ -441,8 +473,8 @@ class WebRTCDetectionClient {
         }
         
         try {
-            this.updateStatus('Starting 30-second benchmark...');
-            console.log('🔬 Starting benchmark...');
+            this.updateStatus(`Starting 30-second benchmark... (${this.mode.toUpperCase()} mode)`);
+            console.log('Starting benchmark...');
             
             // Start benchmark on server
             const response = await fetch('/api/benchmark/start', {
@@ -456,16 +488,16 @@ class WebRTCDetectionClient {
             }
             
             const startData = await response.json();
-            console.log('📊 Benchmark started:', startData);
+            console.log('Benchmark started:', startData);
             
             this.isBenchmarkRunning = true;
-            this.updateStatus('Benchmark running... (30s)');
+            this.updateStatus(`Benchmark running... (30s) - ${this.mode.toUpperCase()} mode`);
             
             // Show countdown
             let countdown = 30;
             const countdownInterval = setInterval(() => {
                 countdown--;
-                this.updateStatus(`Benchmark running... (${countdown}s)`);
+                this.updateStatus(`Benchmark running... (${countdown}s) - ${this.mode.toUpperCase()} mode`);
                 
                 if (countdown <= 0) {
                     clearInterval(countdownInterval);
@@ -474,7 +506,7 @@ class WebRTCDetectionClient {
             }, 1000);
             
         } catch (error) {
-            console.error('❌ Benchmark failed:', error);
+            console.error('Benchmark failed:', error);
             this.updateStatus('Benchmark failed');
         }
     }
@@ -495,7 +527,7 @@ class WebRTCDetectionClient {
             }
             
             const results = await response.json();
-            console.log('📈 Benchmark Results:', results);
+            console.log('Benchmark Results:', results);
             
             // Save to server's metrics.json file
             await this.saveBenchmarkToFile(results);
@@ -506,7 +538,7 @@ class WebRTCDetectionClient {
             this.showBenchmarkSummary(results);
             
         } catch (error) {
-            console.error('❌ Failed to fetch benchmark results:', error);
+            console.error('Failed to fetch benchmark results:', error);
             this.updateStatus('Benchmark completed but failed to save results');
         }
     }
@@ -521,18 +553,18 @@ class WebRTCDetectionClient {
             });
             
             if (response.ok) {
-                console.log('✅ Benchmark results saved to bench/metrics.json');
+                console.log('Benchmark results saved to bench/metrics.json');
             } else {
-                console.warn('⚠️ Failed to save benchmark results to file');
+                console.warn('Failed to save benchmark results to file');
             }
         } catch (error) {
-            console.error('❌ Error saving benchmark results:', error);
+            console.error('Error saving benchmark results:', error);
         }
     }
     
     showBenchmarkSummary(results) {
         const summary = `
-📊 WebRTC Benchmark Summary:
+WebRTC Benchmark Summary:
 • Duration: ${results.duration_seconds}s
 • Mode: ${results.mode}
 • Total Frames: ${results.total_frames}
@@ -549,7 +581,7 @@ class WebRTCDetectionClient {
     
     updateStatus(message) {
         document.getElementById('status').textContent = message;
-        console.log('🔄 PC Status:', message);
+        console.log('PC Status:', message);
     } 
 }
 

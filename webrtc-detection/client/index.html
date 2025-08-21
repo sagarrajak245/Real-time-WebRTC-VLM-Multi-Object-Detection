@@ -4,11 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WebRTC Object Detection</title>
-    <style>
+    <style>  
         body { 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
             margin: 0; 
-            padding: 20px; 
+            padding: 20px;  
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             min-height: 100vh;
@@ -69,7 +69,7 @@
         }
         .status-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
             gap: 15px;
         }
         .status-item {
@@ -77,6 +77,22 @@
             padding: 15px;
             border-radius: 8px;
             text-align: center;
+            min-height: 60px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .status-item:first-child {
+            padding: 10px;
+        }
+        .status-item:first-child .status-value {
+            font-size: 1em;
+            line-height: 1.2;
+        }
+        @media (max-width: 768px) {
+            .status-grid {
+                grid-template-columns: 1fr;
+            }
         }
         .status-label { font-size: 0.9em; opacity: 0.8; }
         .status-value { font-size: 1.4em; font-weight: bold; margin-top: 5px; }
@@ -143,7 +159,7 @@
         <div class="status">
             <div class="status-grid">
                 <div class="status-item">
-                    <div class="status-label">Connection</div>
+                    <div class="status-label">Status</div>
                     <div class="status-value">
                         <span class="connection-indicator" id="connectionIndicator"></span>
                         <span id="status">Initializing...</span>
@@ -197,7 +213,7 @@
             <button id="startBtn" class="primary-btn" disabled>📱 Waiting for Phone...</button>
             <button id="benchBtn">📊 Run Benchmark</button>
             <button id="debugBtn">🔧 Toggle Debug</button>
-        </div>
+        </div>  
     </div>
     
     <script src="/socket.io/socket.io.js"></script>
@@ -230,6 +246,6 @@
             urlEl.textContent = phoneUrl;
         }
     })();
-    </script>
+    </script>  
 </body>
 </html>
