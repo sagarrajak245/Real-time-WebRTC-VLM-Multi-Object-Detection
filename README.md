@@ -21,7 +21,7 @@ The system automatically:
 - ✅ Generates QR code in terminal AND browser
 - ✅ Displays connection instructions
 
-Open `http://localhost:3000` on your laptop, scan the QR code with your phone, and start detecting objects in real-time.
+Open `http://localhost:3000` on your laptop, scan the QR code on terminal with your phone, or use public url generated bt nggrok and start detecting objects in real-time.
 
 ### Available Start Modes
 ```bash
@@ -33,6 +33,68 @@ Open `http://localhost:3000` on your laptop, scan the QR code with your phone, a
 ```bash
 docker-compose up --build
 ```
+
+
+### Local Node.js (Alternative Method)
+
+For developers who prefer to run the application directly on their local machine without Docker, you can use `npm` scripts. This method is best for quick development and testing.
+
+**Prerequisites:**
+
+  * Node.js (v20.0.0 or higher) installed on your machine.
+
+**1. Install Dependencies:**
+First, install all required packages from your project's root directory.
+
+```bash
+npm install 
+```
+
+**2. Run the Application:**
+You can start the server using one of the following commands.
+
+  * **Default Mode (WASM):**
+
+    ```bash
+    npm run start
+    ```
+
+  * **Server Mode:**
+    You need to set the `MODE` environment variable before running the start script.
+
+    ```bash
+    MODE=server npm run start
+    ```
+
+  * **Development Mode (with auto-restarting):**
+    For active development, use the `dev` script which uses `nodemon` to automatically restart the server when you save a file.
+
+    ```bash
+    # Starts in default (WASM) mode
+    npm run dev
+
+    # Starts in server mode
+    MODE=server npm run dev
+    ```
+
+### Teminal QR and Public url: 
+<img width="675" height="719" alt="image" src="https://github.com/user-attachments/assets/1cf8f6c1-7e5e-4eac-93d6-69416c63bab1" />
+
+### wasm mode browser UI:
+<img width="1646" height="898" alt="image" src="https://github.com/user-attachments/assets/b94a0a50-210c-4b93-af96-c56154a93982" />
+
+### wasm mode metrics:
+<img width="1434" height="796" alt="image" src="https://github.com/user-attachments/assets/9c06918a-04bf-4db3-ab86-e8bbc8675787" />
+
+### server mode metrics:
+<img width="1447" height="815" alt="image" src="https://github.com/user-attachments/assets/4156d838-08dc-4a8b-8690-5cff0afdc854" />
+
+### Phone browser UI:
+<img width="775" height="839" alt="image" src="https://github.com/user-attachments/assets/f9889a10-6add-4bf7-9e2c-43db7cc7e174" />
+
+### Report generation ui:
+<img width="1472" height="282" alt="image" src="https://github.com/user-attachments/assets/c27c02b3-2955-426e-bdf1-f0420fb9c145" />
+
 
 ## 🏗️ System Architecture
 
