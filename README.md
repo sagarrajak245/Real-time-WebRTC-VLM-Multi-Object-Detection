@@ -733,39 +733,40 @@ npm test
 # Build production bundle
 npm run build
 ```
-
-### Project Structure
+### project structure:
 ```
 webrtc-detection/
-├── client/                 # Frontend browser code
-│   ├── app.js             # Main WebRTC client
-│   ├── wasm-inference.js  # WASM model inference
-│   └── WebRTCStatsMonitor.js
-├── server/                # Backend Node.js server
-│   ├── index.js          # Express server + Socket.IO
-│   ├── inference.js      # YOLOv8 inference engine
-│   └── FrameProcessor.js # Queue management
-├── public/               # Static web assets
-│   ├── index.html       # Main interface
-│   └── phone.html       # Mobile capture interface
-├── bench/               # Benchmarking tools
-│   ├── run_bench.sh    # Automated benchmark script
-│   └── metrics.json    # Results output
-├── models/             # ONNX model files
-│   ├── yolov5n_320.onnx
-│   └── yolov8n_320.onnx
-├── docker-compose.yml  # Container orchestration  
-├── Dockerfile         # Container definition
-└── start.sh          # Application launcher
-```
-
-### Code Style and Standards
-- **ES6+**: Modern JavaScript features
-- **Async/Await**: Promise-based asynchronous programming
-- **Error Handling**: Comprehensive try-catch blocks
-- **Logging**: Structured logging with timestamps
-- **Documentation**: Inline code documentation
-
+├── bench/
+│   └── run_bench.sh
+├── client/
+│   ├── app.js
+│   ├── index.html
+│   ├── phone.html
+│   ├── wasm-inference.js
+│   ├── WebRTCStatsMonitor.js
+│   └── logs/
+├── model-train/
+│   ├── size.py
+│   ├── train.py
+│   ├── yolov8n-int8.onnx
+│   └── yolov8n.onnx
+├── node_modules/
+├── public/
+├── server/
+│   ├── models/
+│   ├── Frameprocessor.js
+│   ├── index.js
+│   └── inference.js
+├── .env
+├── .gitignore
+├── docker-compose.yml
+├── Dockerfile
+├── download-yolov8.sh
+├── package-lock.json
+├── package.json
+├── start.sh
+├── TEST-CHECKLIST.md
+└── README.md
 ## 🔒 Security and Privacy
 
 ### Data Protection
