@@ -3,7 +3,7 @@
 A production-ready system for real-time multi-object detection on live video streams from mobile phones via WebRTC. Features dual-mode inference (client-side WASM or server-side processing), advanced performance metrics, and smart frame queue management with backpressure handling.
 
 ## Demo Video
-🎥 **[1-minute Loom Demo](YOUR_LOOM_URL_HERE)** - Shows live phone → browser detection with metrics
+🎥 **[1-minute Loom Demo](https://www.loom.com/share/fdaaac33b68b4500beb41001ed27a4f3?sid=71473479-5561-4519-866d-cbb494cf72f3)** - Shows live phone → browser detection with metrics
 
 ## Quick Start
 
