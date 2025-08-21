@@ -17,8 +17,10 @@ cd webrtc-detection
 
 The system automatically:
 - ✅ Builds and starts Docker containers
-- ✅ Exposes public URL via ngrok
-- ✅ Generates QR code in terminal AND browser
+- ✅ It gives u localhost 3000 port URL to run Dispaly of server in browser ui
+- ✅ Also u can open ur phone url in local pc itself to test detection 
+- ✅ Exposes public URL via ngrok only when npm command  currently fails when tries to expose ngrok tunnel inside container
+- ✅ Generates public URL and code in terminal AND browser when npm command u can use tha public url to connect ur phone to test from any netwrok
 - ✅ Displays connection instructions
 
 Open `http://localhost:3000` on your laptop, scan the QR code on terminal with your phone, or use public url generated bt nggrok and start detecting objects in real-time.
@@ -426,7 +428,45 @@ MAX_QUEUE_SIZE=10         # Frame processor queue size
 PROCESSING_TIMEOUT=5000   # Frame timeout (ms)
 NGROK_AUTHTOKEN=your_token # ngrok authentication
 ```
+### Docker File:
+``` yaml
+# Use an official Node.js runtime as a parent image (version 20 as required by package.json)
+FROM node:20-slim
 
+# Install necessary tools: wget and unzip for ngrok
+RUN apt-get update && apt-get install -y wget unzip && rm -rf /var/lib/apt/lists/*
+
+# Set the working directory in the container
+WORKDIR /usr/src/app
+
+# Manually install the correct ngrok binary for the container's architecture
+RUN ARCH=$(uname -m) && \
+    case ${ARCH} in \
+        x86_64) NGROK_ARCH="amd64" ;; \
+        aarch64) NGROK_ARCH="arm64" ;; \
+        *) echo "Unsupported architecture: ${ARCH}"; exit 1 ;; \
+    esac && \
+    wget -q https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-${NGROK_ARCH}.zip && \
+    unzip ngrok-v3-stable-linux-${NGROK_ARCH}.zip && \
+    mv ngrok /usr/local/bin/ngrok && \
+    rm ngrok-v3-stable-linux-${NGROK_ARCH}.zip
+
+# Copy package.json and package-lock.json to leverage Docker cache
+COPY package*.json ./
+
+# Install app dependencies, including optional ones for server mode
+RUN npm install --include=optional
+
+# Bundle app source
+COPY . .
+
+# Your app binds to port 3000, so expose it
+EXPOSE 3000
+
+# Define the command to run your app
+CMD [ "node", "server/index.js" ]
+
+```
 ### Docker Environment Configuration
 ```yaml
 # docker-compose.yml
@@ -610,35 +650,169 @@ services:
       - MODE=wasm
     command: npm run dev
 ```
+# 🧪 Troubleshooting Guide
 
-## 🧪 Troubleshooting
+This guide covers common issues that may arise during setup and operation of the WebRTC Detection Service.
 
-### Common Issues
+## 📱 Phone Cannot Connect to PC
 
-**Phone Connection Problems**:
+**The most common issue** - typically caused by network restrictions that prevent the phone and PC from communicating directly.
+
+**Symptom:** The QR code loads a page on the phone, but the video stream never appears on the PC browser.
+
+### Solution 1: Ensure Same Wi-Fi Network
+
+- Your phone and computer **must be connected to the exact same Wi-Fi network**
+- Public or corporate networks (office/university) often have "Client Isolation" security features that block device-to-device communication
+- **Home networks work best** for this application
+
+### Solution 2: Verify Ngrok is Working (Docker Users)
+
+The `start.sh` script uses ngrok to create a public URL, which bypasses most network issues.
+
+If ngrok fails, follow these steps:
+
+1. **Create a free account** at [ngrok.com](https://ngrok.com) to get your personal authtoken
+2. **Create a `.env` file** in the root project directory
+3. **Add your token** to the `.env` file:
+   ```env
+   NGROK_AUTHTOKEN=YOUR_SECRET_TOKEN_HERE
+   ```
+4. **Restart the application** with `./start.sh` - the script will automatically use your token
+
+### Solution 3: Manual Ngrok Tunnel (Local Node.js Users)
+
+If running locally with `npm run start` and ngrok fails:
+
+1. **Install ngrok** on your local machine following instructions at [ngrok.com](https://ngrok.com)
+2. **Add your authtoken** (one-time setup):
+   ```bash
+   ngrok config add-authtoken YOUR_SECRET_TOKEN_HERE
+   ```
+3. **Start your application** in one terminal:
+   ```bash
+   npm run start
+   ```
+4. **Start ngrok tunnel** in a second terminal:
+   ```bash
+   ngrok http 3000
+   ```
+5. **Use the ngrok URL** (e.g., `https://random-string.ngrok-free.app`) on your phone
+
+---
+
+## 🔥 High CPU Usage or Slow Performance
+
+**Symptom:** Low FPS, high latency, loud fan, and generally unresponsive system.
+
+### Solution 1: Switch to WASM Mode (Recommended)
+
+WASM mode is the **low-resource path** designed for modest hardware - runs AI model directly in browser.
+
 ```bash
-# Check network connectivity
-ping YOUR_PHONE_IP
-
-# Verify ngrok tunnel
-curl -I http://localhost:4040/api/tunnels
-
-# Debug WebRTC connection
-# Open chrome://webrtc-internals in browser
+# Stop current session (Ctrl+C) and restart in WASM mode
+./start.sh wasm
 ```
 
-**High CPU Usage**:
+### Solution 2: Monitor Resource Usage
+
+Use Docker's built-in stats to monitor container resource consumption:
+
 ```bash
-# Switch to WASM mode for distributed processing
-MODE=wasm ./start.sh
-
-# Reduce processing resolution
-INPUT_SIZE=240 ./start.sh
-
-# Monitor resource usage
 docker stats webrtc_detection_service
 ```
 
+---
+
+## 📡 Video Stream is Laggy or Delayed
+
+**Symptom:** Noticeable delay between movement on phone and corresponding action on PC screen.
+
+### Solution 1: Check for Network Bottlenecks
+
+1. **Open WebRTC debugger** in Chrome: navigate to `chrome://webrtc-internals`
+2. **Find the active connection** and inspect the graphs
+3. **Look for:**
+   - High round-trip time (RTT > 200ms) = poor Wi-Fi signal or network congestion
+   - Significant packet loss = network issues
+
+### Solution 2: Check for Processing Bottlenecks
+
+1. **Run a benchmark:**
+   ```bash
+   ./bench/run_bench.sh --mode server
+   ```
+
+2. **Analyze results** in `bench/metrics.json` - check `latency_breakdown`:
+   - **High `network` latency** = network issue
+   - **High `queue_wait`** = server overloaded (reduce client frame rate)
+   - **High `server_processing`** = hardware bottleneck
+
+---
+
+## 🎯 Detection Overlays are Misaligned
+
+**Symptom:** Green bounding boxes don't correctly line up with objects in the video stream.
+
+**Cause:** Timestamp synchronization issue - the system relies on `capture_ts` (capture timestamp) to align detection results with correct video frames.
+
+**Solution:** This indicates a bug in application logic where timestamps are either:
+- Not being sent correctly from the client
+- Not being returned properly with detection results
+
+**Fix:** Ensure all timestamps consistently use milliseconds throughout the application.
+
+---
+
+## 🚨 Emergency Troubleshooting
+
+### Quick Reset
+```bash
+# Stop everything
+docker-compose down
+
+# Clean rebuild
+docker-compose up --build -d
+
+# Check logs
+docker-compose logs -f webrtc-detection-app
+```
+
+### Check Service Health
+```bash
+curl http://localhost:3000/health
+```
+
+### Debug Mode
+Enable debug mode in the web interface for detailed diagnostic information.
+
+---
+
+## 💡 Tips for Best Performance
+
+- **Use a home Wi-Fi network** whenever possible
+- **Start with WASM mode** for lower resource usage
+- **Keep phone and PC close** to Wi-Fi router
+- **Close other bandwidth-heavy applications**
+- **Use Chrome browser** for best WebRTC support
+
+---
+
+## 🆘 Still Need Help?
+
+If you're still experiencing issues:
+
+1. **Check the console logs** in both browser and terminal
+2. **Run the health check** endpoint: `http://localhost:3000/health`
+3. **Enable debug mode** in the web interface
+4. **Try different network environments** (different Wi-Fi networks)
+
+For additional support, please provide:
+- Your operating system and version
+- Node.js version (`node --version`)
+- Docker version (`docker --version`)
+- Network environment (home/office/public)
+- Console error messages
 **Detection Overlay Misalignment**:
 - Verify timestamp synchronization between phone and browser
 - Check browser console for WebRTC errors  
