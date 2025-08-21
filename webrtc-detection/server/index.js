@@ -362,7 +362,7 @@ io.on('connection', (socket) => {
 server.listen(PORT, async () => {
     console.log(`🚀 Enhanced WebRTC Detection Server running on port ${PORT}`);
     console.log(`💻 PC Browser: http://localhost:${PORT}`);
-    console.log(`📱 Phone (Local): http://localhost:${PORT}/phone`);
+    console.log(`📱 Phone (Local Pc): http://localhost:${PORT}/phone`);
     console.log(`🎯 Mode: ${MODE.toUpperCase()}`);
     console.log(`📐 Input Size: ${INPUT_SIZE}x${INPUT_SIZE}`);
     console.log(`⚡ Frame Processor: Queue=${frameProcessor.maxQueueSize}, Timeout=${frameProcessor.processingTimeoutMs}ms`);

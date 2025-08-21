@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y wget unzip && rm -rf /var/lib/apt/lists
 # Set the working directory in the container
 WORKDIR /usr/src/app
 
-# ✅ FIX: Manually install the correct ngrok binary for the container's architecture
+# Manually install the correct ngrok binary for the container's architecture
 RUN ARCH=$(uname -m) && \
     case ${ARCH} in \
         x86_64) NGROK_ARCH="amd64" ;; \
@@ -23,13 +23,12 @@ RUN ARCH=$(uname -m) && \
 COPY package*.json ./
 
 # Install app dependencies, including optional ones for server mode
-# The --include=optional flag ensures onnxruntime-node is installed
 RUN npm install --include=optional
 
 # Bundle app source
 COPY . .
 
-# Your app binds to port 3000, so expose it 
+# Your app binds to port 3000, so expose it
 EXPOSE 3000
 
 # Define the command to run your app
