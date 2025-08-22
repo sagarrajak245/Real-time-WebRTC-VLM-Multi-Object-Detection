@@ -25,9 +25,12 @@ git clone https://github.com/sagarrajak245/Real-time-WebRTC-VLM-Multi-Object-Det
 # 2. Navigate into the project directory
 cd webrtc-detection
 
-# 3. Make the start script executable
+#3 .# Create .env file with your ngrok token
+echo "NGROK_AUTHTOKEN=your_actual_token_here" > .env
+
+# 4. Make the start script executable
 chmod +x start.sh
-# 4. run script
+# 5. run script
 ./start.sh
 ```
 
