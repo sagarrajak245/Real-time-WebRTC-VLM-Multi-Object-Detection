@@ -1,4 +1,4 @@
-
+version: '3.8'
 
 services:
   webrtc-detection-app:
@@ -12,7 +12,9 @@ services:
       - ./public:/usr/src/app/public
       - ./bench:/usr/src/app/bench
     environment:
-      - MODE=wasm
-      # ✅ CORRECT: Reads the token from the .env file
-      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN} 
-    command: npm run dev 
+      # ✅ FIX: This now reads the MODE variable from your shell (e.g., from start.sh)
+      # It will default to 'wasm' if not set.
+      - MODE=${MODE:-wasm}
+      # Reads the ngrok token from your .env file
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+    command: npm run dev
