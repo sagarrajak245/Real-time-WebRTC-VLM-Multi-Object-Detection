@@ -23,6 +23,7 @@ Once the prerequisites are met, you can get the project running with these comma
 git clone https://github.com/sagarrajak245/Real-time-WebRTC-VLM-Multi-Object-Detection.git
 
 # 2. Navigate into the project directory
+cd Real-time-WebRTC-VLM-Multi-Object-Detection
 cd webrtc-detection
 
 #3 .# Create .env file with your ngrok token
