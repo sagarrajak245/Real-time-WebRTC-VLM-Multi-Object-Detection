@@ -1,7 +1,6 @@
-version: '3.8'
 
 services:
-  webrtc-detection-app:
+  webrtc-detection-app: 
     build: .
     container_name: webrtc_detection_service
     ports:
