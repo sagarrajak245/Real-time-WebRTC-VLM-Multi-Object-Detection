@@ -35,8 +35,9 @@ The system automatically:
 - ✅ Builds and starts Docker containers
 - ✅ It gives u localhost 3000 port URL to run Dispaly of server in browser ui
 - ✅ Also u can open ur phone url in local pc itself to test detection 
-- ✅ Exposes public URL via ngrok only when npm command  currently fails when tries to expose ngrok tunnel inside container
-- ✅ Generates public URL and code in terminal AND browser when npm command u can use tha public url to connect ur phone to test from any netwrok
+- ✅ Exposes public URL via ngrok only currently fails when tries to expose ngrok tunnel inside container
+- ✅ Generates public URL and code in terminal AND browser when ngrok is installed locally .
+- ✅ Else Displays simple url for  *browser:*  (http://localhost:3000)   For *Phone:*(http://localhost:3000/phone) u can open them both on different tab
 - ✅ Displays connection instructions
 
 Open `http://localhost:3000` on your laptop, scan the QR code on terminal with your phone, or use public url generated bt nggrok and start detecting objects in real-time.
@@ -95,7 +96,10 @@ You can start the server using one of the following commands.
     MODE=server npm run dev
     ```
 
-### Teminal QR and Public url: 
+ ### Once you started server via ./start.sh output will be like this:
+<img width="1177" height="561" alt="image" src="https://github.com/user-attachments/assets/f79dca7f-7f70-4aa3-9a08-ab9dae4d1aaa" />
+
+### IF ngrok is installed and authtoken is in .env file then  Teminal QR and Public url be like this: 
 <img width="675" height="719" alt="image" src="https://github.com/user-attachments/assets/1cf8f6c1-7e5e-4eac-93d6-69416c63bab1" />
 
 ### wasm mode browser UI:
@@ -113,6 +117,232 @@ You can start the server using one of the following commands.
 ### Report generation ui:
 <img width="1472" height="282" alt="image" src="https://github.com/user-attachments/assets/c27c02b3-2955-426e-bdf1-f0420fb9c145" />
 
+# Ngrok Setup Guide
+
+## What is Ngrok?
+
+Ngrok is a secure tunneling service that exposes your local development server to the internet through a public URL. This is useful for:
+- Testing webhooks locally
+- Sharing your local development with others
+- Testing mobile apps against local APIs
+- Debugging third-party integrations
+
+## Installation
+
+### Method 1: Download Binary (Recommended)
+
+1. **Sign up for a free ngrok account**
+   - Visit [ngrok.com](https://ngrok.com) and create an account
+   - Get your authtoken from the dashboard
+
+2. **Download ngrok**
+   ```bash
+   # For macOS (using Homebrew)
+   brew install ngrok/ngrok/ngrok
+
+   # For Windows (using Chocolatey)
+   choco install ngrok
+
+   # For Linux (manual download)
+   wget https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz
+   tar xvzf ngrok-v3-stable-linux-amd64.tgz
+   sudo mv ngrok /usr/local/bin
+   ```
+
+3. **Authenticate ngrok**
+   ```bash
+   ngrok config add-authtoken YOUR_AUTHTOKEN_HERE
+   ```
+
+### Method 2: NPM Package (For Node.js projects)
+
+```bash
+# Install globally
+npm install -g ngrok
+
+# Or install as dev dependency
+npm install --save-dev ngrok
+```
+
+## Basic Usage
+
+### Command Line Usage
+
+1. **Start your local development server first**
+   ```bash
+   # Example: Start your app on port 3000
+   npm start
+   # or
+   python manage.py runserver 8000
+   # or
+   php -S localhost:8080
+   ```
+
+2. **Expose your local server**
+   ```bash
+   # Expose HTTP server on port 3000
+   ngrok http 3000
+
+   # Expose HTTPS server
+   ngrok http https://localhost:3000
+
+   # Expose with custom subdomain (requires paid plan)
+   ngrok http 3000 --subdomain=myapp
+
+   # Expose with basic auth
+   ngrok http 3000 --basic-auth="username:password"
+   ```
+
+3. **Access your tunnel**
+   - Ngrok will display URLs like:
+     - `https://abc123.ngrok.io` (HTTPS)
+     - `http://abc123.ngrok.io` (HTTP)
+   - Use these URLs to access your local application from anywhere
+
+
+## Configuration File
+
+Create `~/.ngrok2/ngrok.yml` for persistent configuration:
+
+```yaml
+version: "2"
+authtoken: YOUR_AUTHTOKEN_HERE
+region: us
+
+tunnels:
+  web:
+    addr: 3000
+    proto: http
+    subdomain: myapp
+  
+  api:
+    addr: 8000
+    proto: http
+    subdomain: myapp-api
+```
+
+Start named tunnels:
+```bash
+ngrok start web api
+```
+
+## Common Use Cases
+
+### Webhook Testing
+
+```bash
+# Start your webhook endpoint locally (e.g., port 3000)
+npm start
+
+# Expose it via ngrok
+ngrok http 3000
+
+# Use the ngrok URL in your webhook configuration
+# Example: https://abc123.ngrok.io/webhooks/stripe
+```
+
+### Mobile App Development
+
+```bash
+# Start your API server
+npm run dev
+
+# Expose it
+ngrok http 3000
+
+# Use the ngrok URL in your mobile app configuration
+# Example: https://abc123.ngrok.io/api
+```
+
+## Environment Variables
+
+Create a `.env` file to manage your ngrok configuration:
+
+```bash
+NGROK_AUTHTOKEN=your_authtoken_here
+NGROK_SUBDOMAIN=myapp
+NGROK_REGION=us
+```
+
+## Useful Commands
+
+```bash
+# Check ngrok version
+ngrok version
+
+# List active tunnels
+ngrok tunnel list
+
+# Inspect HTTP traffic
+# Visit http://localhost:4040 in your browser
+
+# Start with specific region
+ngrok http 3000 --region=eu
+
+# Bind to specific host
+ngrok http mysite.dev:80
+
+# TCP tunnel (for non-HTTP services)
+ngrok tcp 22
+```
+
+## Security Considerations
+
+- **Free accounts** get random URLs that change each restart
+- **Never expose sensitive data** through ngrok tunnels
+- **Use basic auth** for additional security when needed
+- **Monitor traffic** through the web interface at `http://localhost:4040`
+- **Use HTTPS URLs** when possible for encrypted traffic
+
+## Troubleshooting
+
+### Common Issues
+
+1. **"tunnel not found" error**
+   - Make sure your local server is running on the specified port
+
+2. **Authentication failed**
+   - Verify your authtoken: `ngrok config check`
+   - Re-add your authtoken: `ngrok config add-authtoken YOUR_TOKEN`
+
+3. **Connection refused**
+   - Check if the port is correct and available
+   - Ensure no firewall is blocking the connection
+
+4. **Tunnel limit exceeded**
+   - Free accounts have a limit of 1 tunnel at a time
+   - Upgrade to a paid plan for more tunnels
+
+### Getting Help
+
+- Check ngrok status: `ngrok diagnose`
+- View logs: Check `~/.ngrok2/ngrok.log`
+- Documentation: [ngrok.com/docs](https://ngrok.com/docs)
+
+## Integration with Your Project
+
+Add these scripts to your `package.json`:
+
+```json
+{
+  "scripts": {
+    "dev": "npm start",
+    "tunnel": "ngrok http 3000",
+    "dev:tunnel": "concurrently \"npm start\" \"ngrok http 3000\""
+  }
+}
+```
+
+Now you can run:
+```bash
+npm run dev:tunnel
+```
+
+This will start both your development server and ngrok tunnel simultaneously.
+
+---
+
+**Note**: Replace `3000` with your actual port number and `YOUR_AUTHTOKEN_HERE` with your actual ngrok authtoken.
 
 ## 🏗️ System Architecture
 
