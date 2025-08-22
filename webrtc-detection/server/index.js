@@ -98,13 +98,20 @@ app.post('/api/benchmark/start', express.json(), (req, res) => {
         bandwidthSamples: []
     };
 
-    // Reset frame processor metrics for fresh benchmark
     frameProcessor.resetMetrics();
+
+    // ✅ FIX: Notify all clients that the benchmark has started
+    io.emit('benchmark-started');
+    console.log('📢 Emitted benchmark-started event to clients.');
 
     setTimeout(() => {
         if (benchmarkData.isRunning) {
             benchmarkData.isRunning = false;
             benchmarkData.results = calculateEnhancedBenchmarkResults();
+
+            // ✅ FIX: Notify all clients that the benchmark has stopped
+            io.emit('benchmark-stopped');
+            console.log('📢 Emitted benchmark-stopped event to clients.');
             console.log('📊 Enhanced benchmark completed with advanced metrics');
         }
     }, duration * 1000);
@@ -153,7 +160,6 @@ app.post('/api/benchmark/frame', express.json(), (req, res) => {
 
     const recv_ts = Date.now();
 
-    // Record frame with enhanced metrics
     const frameData = {
         frame_id,
         capture_ts,
@@ -166,18 +172,15 @@ app.post('/api/benchmark/frame', express.json(), (req, res) => {
 
     benchmarkData.frames.push(frameData);
 
-    // Calculate total latency from the components and push it to the latencies array.
     const totalLatency = (network_latency_ms || 0) + (server_latency_ms || 0) + (queue_wait_ms || 0);
     if (totalLatency > 0) {
         benchmarkData.latencies.push(totalLatency);
     }
 
-    // Collect latency breakdowns
     if (frameData.network_latency_ms > 0) benchmarkData.networkLatencies.push(frameData.network_latency_ms);
     if (frameData.server_latency_ms > 0) benchmarkData.serverLatencies.push(frameData.server_latency_ms);
     if (frameData.queue_wait_ms > 0) benchmarkData.queueLatencies.push(frameData.queue_wait_ms);
 
-    // Record bandwidth if available
     if (bandwidth) {
         benchmarkData.bandwidthSamples.push({
             timestamp: recv_ts,
@@ -202,7 +205,6 @@ app.post('/api/benchmark/save', express.json(), (req, res) => {
     }
 });
 
-// Enhanced API endpoints for real-time metrics
 app.get('/api/metrics/realtime', (req, res) => {
     res.json({
         frameProcessor: frameProcessor.getMetrics(),
@@ -294,9 +296,9 @@ function calculateEnhancedBenchmarkResults() {
     };
 }
 
-function calculateBandwidthStats() { /* ... unchanged ... */ }
-function detectBottleneck(networkLatencies, serverLatencies, queueLatencies) { /* ... unchanged ... */ }
-function generateRecommendations(frameStats, bandwidthStats) { /* ... unchanged ... */ }
+function calculateBandwidthStats() { /* ... unchanged ... */ return {}; }
+function detectBottleneck(networkLatencies, serverLatencies, queueLatencies) { /* ... unchanged ... */ return ""; }
+function generateRecommendations(frameStats, bandwidthStats) { /* ... unchanged ... */ return []; }
 
 
 // Socket.IO with Enhanced Frame Processing
@@ -311,7 +313,6 @@ io.on('connection', (socket) => {
     socket.on('frame-data', async (data) => {
         try {
             if (MODE === 'server' && yolov8Inference.isLoaded) {
-                // ✅ FIX: Pass the 'socket' object to the frame processor
                 frameProcessor.enqueueFrame(data, async (frameData) => {
                     const processing_start_ts = Date.now();
                     const detectionResult = await yolov8Inference.detect(frameData);
@@ -324,10 +325,9 @@ io.on('connection', (socket) => {
                         server_latency_ms: processing_end_ts - processing_start_ts,
                         network_latency_ms: frameData.capture_ts ? processing_start_ts - frameData.capture_ts : 0
                     };
-                }, socket); // <-- Pass socket here
+                }, socket);
 
             } else {
-                // Fallback for WASM mode (no change here)
                 const recv_ts = Date.now();
                 const detectionResult = {
                     frame_id: data.frame_id || recv_ts,
@@ -370,7 +370,7 @@ server.listen(PORT, async () => {
 
     // Start ngrok tunnel
     try {
-        const url = await ngrok.connect(PORT);
+        const url = await ngrok.connect({ addr: PORT, authtoken_from_env: true });
         phoneUrlGlobal = `${url}/phone`;
         console.log(`\n🌍 Public phone URL: ${phoneUrlGlobal}`);
         qrcode.generate(phoneUrlGlobal, { small: true });
