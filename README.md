@@ -12,6 +12,7 @@ A production-ready system for real-time multi-object detection on live video str
 ```bash
 git clone https://github.com/sagarrajak245/Real-time-WebRTC-VLM-Multi-Object-Detection.git
 cd webrtc-detection
+chmod +x start.sh
 ./start.sh
 ```
 
