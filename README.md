@@ -16,6 +16,72 @@ Docker & Docker Compose: For building and running the application in a container
 
 Docker Engine: Make sure the Docker daemon is running before you proceed. You can check this by opening Docker Desktop or running docker --version in your terminal.
 
+## 📦 Model Setup
+
+This project requires YOLO models for object detection. If you don't have the models locally, you can easily download them using our automated script.
+
+### 🚀 Quick Model Download
+
+We provide a bash script that automatically downloads and sets up both YOLOv5n and YOLOv8n models in the correct directories.
+
+#### Prerequisites
+- `curl` (usually pre-installed on most systems)
+- Internet connection
+- Bash shell (Linux/macOS/WSL/Git Bash)
+
+#### Download Steps
+
+1. **Make the script executable:**
+   ```bash
+   chmod +x download_models.sh
+   ```
+
+2. **Run the download script:**
+   ```bash
+   ./download_models.sh
+   ```
+
+3. **Wait for completion** - The script will:
+   - 📁 Create `public/models/` and `server/models/` directories
+   - ⬇️ Download YOLOv5n model (~6MB)
+   - ⬇️ Download YOLOv8n model (~6MB)
+   - 📋 Copy models to both required locations
+   - ✅ Verify successful downloads
+
+
+
+### 📁 Expected File Structure
+After running the script, you should have:
+```
+webrtc-detection/
+├── public/
+│   └── models/
+│       ├── yolov5n.onnx
+│       └── yolov8n.onnx
+├── server/
+│   └── models/
+│       ├── yolov5n.onnx
+│       └── yolov8n.onnx
+└── download_models.sh
+```
+
+### 🔧 Troubleshooting
+
+**If download fails:**
+1. Check your internet connection
+2. Ensure you have `curl` installed: `curl --version`
+3. Try running the script again (sometimes Google Drive has temporary issues)
+4. If still failing, download manually:
+   - [YOLOv5n Model](https://drive.google.com/uc?export=download&id=1L34kjXyXw-ARzKfsk6p-g75Zd8x-VUGE)
+   - [YOLOv8n Model](https://drive.google.com/uc?export=download&id=1ieW8oEUXXrTG2VhMORXqiP6qSLtMmix8)
+
+**Manual Setup (if script fails):**
+1. Download both model files from the links above
+2. Create directories: `mkdir -p public/models server/models`
+3. Place the downloaded `.onnx` files in both directories
+4. Rename files to `yolov5n.onnx` and `yolov8n.onnx`
+
+
 One-Command Setup
 Once the prerequisites are met, you can get the project running with these commands:
 ```bash
