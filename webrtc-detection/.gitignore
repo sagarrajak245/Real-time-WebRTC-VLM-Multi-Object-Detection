@@ -14,7 +14,7 @@ pids/
 
 # Generated files
 metrics.json
-*.onnx
+
 .pt  
 
 # Docker

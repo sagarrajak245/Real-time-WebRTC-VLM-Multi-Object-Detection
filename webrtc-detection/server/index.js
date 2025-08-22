@@ -1,18 +1,18 @@
 // server/index.js - Enhanced with FrameProcessor and Advanced Metrics (Corrected)
 import express from 'express';
-import { createServer } from 'http';
-import { Server } from 'socket.io';
-import { fileURLToPath } from 'url'; 
-import { dirname, join } from 'path';
 import { writeFileSync } from 'fs';
-import qrcode from 'qrcode-terminal';
-import YOLOv8Inference from './inference.js';
-import FrameProcessor from './FrameProcessor.js';
+import { createServer } from 'http';
 import ngrok from "ngrok";
+import { dirname, join } from 'path';
+import qrcode from 'qrcode-terminal';
+import { Server } from 'socket.io';
+import { fileURLToPath } from 'url';
+import FrameProcessor from './FrameProcessor.js';
+import YOLOv8Inference from './inference.js';
 
 // Fix __dirname in ES modules
-const __filename = fileURLToPath(import.meta.url); 
-const __dirname = dirname(__filename);  
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const app = express();
 const server = createServer(app);
@@ -21,9 +21,9 @@ const io = new Server(server, {
 });
 
 const PORT = process.env.PORT || 3000;
-const MODE = process.env.MODE || 'wasm'; 
+const MODE = process.env.MODE || 'wasm';
 const INPUT_SIZE = 320;
- 
+
 // Initialize YOLOv8 inference and FrameProcessor
 const yolov8Inference = new YOLOv8Inference();
 const frameProcessor = new FrameProcessor(10, 5000);
@@ -316,7 +316,7 @@ io.on('connection', (socket) => {
                     const processing_start_ts = Date.now();
                     const detectionResult = await yolov8Inference.detect(frameData);
                     const processing_end_ts = Date.now();
-                    
+
                     return {
                         ...detectionResult,
                         processing_start_ts,
