@@ -6,13 +6,28 @@ A production-ready system for real-time multi-object detection on live video str
 
 **[1-minute Loom Demo](https://www.loom.com/share/fdaaac33b68b4500beb41001ed27a4f3?sid=71473479-5561-4519-866d-cbb494cf72f3)** - Shows live phone → browser detection with comprehensive metrics
 
-## 🚀 Quick Start
+🚀 Quick Start
+Prerequisites
+Before you begin, please ensure you have the following software installed and running on your local machine:
 
-### One-Command Setup
+Git: For cloning the repository.
+
+Docker & Docker Compose: For building and running the application in a container.
+
+Docker Engine: Make sure the Docker daemon is running before you proceed. You can check this by opening Docker Desktop or running docker --version in your terminal.
+
+One-Command Setup
+Once the prerequisites are met, you can get the project running with these commands:
 ```bash
+# 1. Clone the repository
 git clone https://github.com/sagarrajak245/Real-time-WebRTC-VLM-Multi-Object-Detection.git
+
+# 2. Navigate into the project directory
 cd webrtc-detection
-chmod +x start.sh
+
+# 3. Make the start script executable
+chmod +x start
+# 4. run script
 ./start.sh
 ```
 
