@@ -26,7 +26,7 @@ git clone https://github.com/sagarrajak245/Real-time-WebRTC-VLM-Multi-Object-Det
 cd webrtc-detection
 
 # 3. Make the start script executable
-chmod +x start
+chmod +x start.sh
 # 4. run script
 ./start.sh
 ```
