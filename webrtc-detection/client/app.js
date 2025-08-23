@@ -531,12 +531,12 @@ class WebRTCDetectionClient {
             this.webrtcStatsMonitor.startMonitoring(1000); // 1 second intervals
         }
         
-        // Capture frames at 15 FPS for detection
+        
         this.frameInterval = setInterval(() => {
-            if (this.video.videoWidth > 0 && this.isStreamingActive) {
+            if (this.video.videoWidth > 0 && this.isStreamingActive) { 
                 this.captureAndSendFrame();
             }
-        }, 1000 / 8);   //{sagar made this chnage}  i tried sending 15 frame but it was creating bottleneck so i chnaged to 10  then 8
+        }, 1000 / 10);      //{sagar made this chnage}  i tried sending 15 frame but it was creating bottleneck so i chnaged to 10 
     }   
     
     stopDetection() {    
