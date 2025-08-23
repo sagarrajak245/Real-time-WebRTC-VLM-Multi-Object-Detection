@@ -38,6 +38,12 @@ chmod +x start.sh
 ./start.sh
 ```
 
+### Available Start Modes
+```bash
+./start.sh wasm      # Client-side inference (default)
+./start.sh server    # Server-side inference
+```
+
 ### If u got this error means your Docker engine is not Running Run it and error will be fixed:
 ```bash
 -----------------------------------------------------
@@ -164,11 +170,7 @@ webrtc-detection/
 3. Place the downloaded `.onnx` files in both directories
 4. Rename files to `yolov5n.onnx` and `yolov8n.onnx`
 
-### Available Start Modes
-```bash
-./start.sh wasm      # Client-side inference (default)
-./start.sh server    # Server-side inference
-```
+
 
 ### Docker Compose (Recommended)
 ```bash
