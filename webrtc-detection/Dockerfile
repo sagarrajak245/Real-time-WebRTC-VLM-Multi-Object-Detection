@@ -5,7 +5,7 @@ FROM node:20-slim
 RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     unzip \
-    build-essential \ 
+    build-essential \
     python3 \
     make \
     && rm -rf /var/lib/apt/lists/*
@@ -20,7 +20,8 @@ RUN ARCH=$(uname -m) && \
     aarch64) NGROK_ARCH="arm64" ;; \
     *) echo "Unsupported architecture: ${ARCH}"; exit 1 ;; \
     esac && \
-    wget -q https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-${NGROK_ARCH}.zip && \
+    # ✅ FIX: Added --no-check-certificate to bypass SSL verification issues inside the container
+    wget --no-check-certificate -q https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-${NGROK_ARCH}.zip && \
     unzip ngrok-v3-stable-linux-${NGROK_ARCH}.zip && \
     mv ngrok /usr/local/bin/ngrok && \
     rm ngrok-v3-stable-linux-${NGROK_ARCH}.zip
