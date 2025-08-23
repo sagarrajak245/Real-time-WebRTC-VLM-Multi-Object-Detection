@@ -1,9 +1,9 @@
 # --- Stage 1: Builder ---
-# This stage has all the tools needed to compile native dependencies like onnxruntime-node
+# This stage has all the tools needed to compile native dependencies
 FROM node:20-slim as builder
 
 # Install essential build tools
-RUN apt-get update && apt-get install -y --no-install-recommends \ 
+RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     python3 \
     make \
@@ -15,11 +15,7 @@ WORKDIR /usr/src/app
 # Copy package files
 COPY package*.json ./
 
-# Force CPU-only build for onnxruntime-node
-ENV ONNXRUNTIME_PREFER_SYSTEM_LIB=1
-ENV ORT_DISABLE_GPU=1
-
-# Install all dependencies (make sure onnxruntime-node is in "dependencies")
+# Install all dependencies using the more reliable CPU-specific onnxruntime package
 RUN npm install
 
 # --- Stage 2: Production ---
@@ -50,7 +46,7 @@ RUN ARCH=$(uname -m) && \
     rm ngrok-v3-stable-linux-${NGROK_ARCH}.zip
 
 # Copy the pre-built node_modules from the builder stage
-COPY --from=builder /usr/src/app/node_modules ./node_modules
+COPY --from=builder /usr/src/app/node_modules ./node_modules 
 
 # Copy the application source code
 COPY . .
