@@ -1,8 +1,8 @@
 # Use an official Node.js runtime as a parent image
 FROM node:20-slim
 
-# Install essential build tools (compiler, python, etc.) needed for onnxruntime-node
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Install essential build tools and certificates
+RUN apt-get update && apt-get install -y --no-install-recommends \ 
     wget \
     unzip \
     build-essential \
@@ -30,12 +30,11 @@ RUN ARCH=$(uname -m) && \
 # Copy package.json and package-lock.json to leverage Docker cache
 COPY package*.json ./
 
-# ✅ PROVEN FIX: Set environment variables to force CPU-only installation
+# ✅ FIX: Force npm to use the pre-compiled CPU version of onnxruntime-node
 ENV ONNXRUNTIME_PREFER_SYSTEM_LIB=1
 ENV ORT_DISABLE_GPU=1
-ENV ONNXRUNTIME_BUILD_SETTINGS_FILE=""
 
-# Configure npm for better reliability
+# Configure npm for better reliability in CI/CD environments
 RUN npm config set fetch-retry-maxtimeout 600000 && \
     npm config set fetch-retry-mintimeout 10000 && \
     npm config set fetch-retries 3
@@ -46,11 +45,11 @@ RUN npm install --verbose
 # Bundle app source
 COPY . .
 
-# Create necessary directories
-RUN mkdir -p models temp
+# Create necessary directories that might be missed by volume mounts initially
+RUN mkdir -p bench public server/models
 
 # Your app binds to port 3000, so expose it
 EXPOSE 3000
 
 # Define the command to run your app
-CMD [ "node", "server/index.js" ] 
+CMD [ "node", "server/index.js" ]
