@@ -148,11 +148,20 @@ You can start the server using one of the following commands.
     npm run start
     ```
 
+For windows powershell:
+    ```poweshell
+    set MODE=server&& npm run start
+    ```
+
   * **Server Mode:**
     You need to set the `MODE` environment variable before running the start script.
 
     ```bash
     MODE=server npm run start
+    ```
+    For windows powershell:
+    ```poweshell
+    set MODE=server&& npm run start
     ```
 
   * **Development Mode (with auto-restarting):**
