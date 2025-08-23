@@ -58,7 +58,7 @@ The system automatically:
 
 Open `http://localhost:3000` on your laptop, scan the QR code on terminal with your phone, or use public url generated bt nggrok and start detecting objects in real-time.
 
-## 📦 Model Setup
+## 📦 Model Setup if 
 
 This project requires YOLO models for object detection. If you don't have the models locally, you can easily download them using our automated script.
 
