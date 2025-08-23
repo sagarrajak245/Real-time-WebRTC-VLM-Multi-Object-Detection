@@ -16,6 +16,39 @@ Docker & Docker Compose: For building and running the application in a container
 
 Docker Engine: Make sure the Docker daemon is running before you proceed. You can check this by opening Docker Desktop or running docker --version in your terminal.
 
+
+
+
+One-Command Setup
+Once the prerequisites are met, you can get the project running with these commands:
+```bash
+# 1. Clone the repository
+git clone https://github.com/sagarrajak245/Real-time-WebRTC-VLM-Multi-Object-Detection.git
+
+# 2. Navigate into the project directory
+cd Real-time-WebRTC-VLM-Multi-Object-Detection
+cd webrtc-detection
+
+#3 .# Create .env file with your ngrok token
+echo "NGROK_AUTHTOKEN=your_actual_token_here" > .env
+
+# 4. Make the start script executable
+chmod +x start.sh
+# 5. run script
+./start.sh
+```
+
+The system automatically:
+- ✅ Builds and starts Docker containers
+- ✅ It gives u localhost 3000 port URL to run Dispaly of server in browser ui
+- ✅ Also u can open ur phone url in local pc itself to test detection 
+- ✅ Exposes public URL via ngrok only currently fails when tries to expose ngrok tunnel inside container
+- ✅ Generates public URL and code in terminal AND browser when ngrok is installed locally .
+- ✅ Else Displays simple url for  *browser:*  (http://localhost:3000)   For *Phone:*(http://localhost:3000/phone) u can open them both on different tab
+- ✅ Displays connection instructions
+
+Open `http://localhost:3000` on your laptop, scan the QR code on terminal with your phone, or use public url generated bt nggrok and start detecting objects in real-time.
+
 ## 📦 Model Setup
 
 This project requires YOLO models for object detection. If you don't have the models locally, you can easily download them using our automated script.
@@ -80,37 +113,6 @@ webrtc-detection/
 2. Create directories: `mkdir -p public/models server/models`
 3. Place the downloaded `.onnx` files in both directories
 4. Rename files to `yolov5n.onnx` and `yolov8n.onnx`
-
-
-One-Command Setup
-Once the prerequisites are met, you can get the project running with these commands:
-```bash
-# 1. Clone the repository
-git clone https://github.com/sagarrajak245/Real-time-WebRTC-VLM-Multi-Object-Detection.git
-
-# 2. Navigate into the project directory
-cd Real-time-WebRTC-VLM-Multi-Object-Detection
-cd webrtc-detection
-
-#3 .# Create .env file with your ngrok token
-echo "NGROK_AUTHTOKEN=your_actual_token_here" > .env
-
-# 4. Make the start script executable
-chmod +x start.sh
-# 5. run script
-./start.sh
-```
-
-The system automatically:
-- ✅ Builds and starts Docker containers
-- ✅ It gives u localhost 3000 port URL to run Dispaly of server in browser ui
-- ✅ Also u can open ur phone url in local pc itself to test detection 
-- ✅ Exposes public URL via ngrok only currently fails when tries to expose ngrok tunnel inside container
-- ✅ Generates public URL and code in terminal AND browser when ngrok is installed locally .
-- ✅ Else Displays simple url for  *browser:*  (http://localhost:3000)   For *Phone:*(http://localhost:3000/phone) u can open them both on different tab
-- ✅ Displays connection instructions
-
-Open `http://localhost:3000` on your laptop, scan the QR code on terminal with your phone, or use public url generated bt nggrok and start detecting objects in real-time.
 
 ### Available Start Modes
 ```bash
