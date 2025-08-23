@@ -38,6 +38,15 @@ chmod +x start.sh
 ./start.sh
 ```
 
+### If u got this error means your Docker engine is not Running Run it and error will be fixed:
+```bash
+-----------------------------------------------------
+error during connect: Get "http://%2F%2F.%2Fpipe%2FdockerDesktopLinuxEngine/v1.47/containers/json?all=1&filters=%7B%22label%22%3A%7B%22com.docker.compose.config-hash%22%3Atrue%2C%22com.docker.compose.oneoff%3DFalse%22%3Atrue%2C%22com.docker.compose.project%3Dwebrtc-detection%22%3Atrue%2C%22com.docker.compose.service%3Dwebrtc-detection-app%22%3Atrue%7D%7D": open //./pipe/dockerDesktopLinuxEngine: The system cannot find the file specified.
+error during connect: Get "http://%2F%2F.%2Fpipe%2FdockerDesktopLinuxEngine/v1.47/containers/json?all=1&filters=%7B%22label%22%3A%7B%22com.docker.compose.config-hash%22%3Atrue%2C%22com.docker.compose.oneoff%3DFalse%22%3Atrue%2C%22com.docker.compose.project%3Dwebrtc-detection%22%3Atrue%2C%22com.docker.compose.service%3Dwebrtc-detection-app%22%3Atrue%7D%7D": open //./pipe/dockerDesktopLinuxEngine: The system cannot find the file specified.
+
+```
+
+
 The system automatically:
 - ✅ Builds and starts Docker containers
 - ✅ It gives u localhost 3000 port URL to run Dispaly of server in browser ui
