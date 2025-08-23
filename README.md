@@ -19,7 +19,7 @@ Docker Engine: Make sure the Docker daemon is running before you proceed. You ca
 
 
 
-One-Command Setup
+One-Command Setup use gitbash:
 Once the prerequisites are met, you can get the project running with these commands:
 ```bash
 # 1. Clone the repository
