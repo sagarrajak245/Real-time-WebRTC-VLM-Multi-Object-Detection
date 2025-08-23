@@ -38,6 +38,12 @@ chmod +x start.sh
 ./start.sh
 ```
 
+### Available Start Modes
+```bash
+./start.sh wasm      # Client-side inference (default)
+./start.sh server    # Server-side inference
+```
+
 ### If u got this error means your Docker engine is not Running Run it and error will be fixed:
 ```bash
 -----------------------------------------------------
@@ -45,7 +51,48 @@ error during connect: Get "http://%2F%2F.%2Fpipe%2FdockerDesktopLinuxEngine/v1.4
 error during connect: Get "http://%2F%2F.%2Fpipe%2FdockerDesktopLinuxEngine/v1.47/containers/json?all=1&filters=%7B%22label%22%3A%7B%22com.docker.compose.config-hash%22%3Atrue%2C%22com.docker.compose.oneoff%3DFalse%22%3Atrue%2C%22com.docker.compose.project%3Dwebrtc-detection%22%3Atrue%2C%22com.docker.compose.service%3Dwebrtc-detection-app%22%3Atrue%7D%7D": open //./pipe/dockerDesktopLinuxEngine: The system cannot find the file specified.
 
 ```
+### IF you got this error :
 
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1976:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+Let’s make it **2 simple steps** so you can quickly identify and kill whatever is running on port `3000`.
+
+---
+
+### 🔹 Step 1: Identify the process
+
+Run this in PowerShell or CMD:
+
+```powershell
+netstat -ano | findstr :3000
+```
+
+👉 This shows the PID (last column) of the process using port `3000`.
+
+---
+
+### 🔹 Step 2: Kill the process
+
+Use the PID from Step 1:
+
+```powershell
+taskkill /PID <PID> /F
+```
+
+Example (from your last output):
+
+```powershell
+taskkill /PID 21736 /F
+taskkill /PID 14204 /F
+```
 
 The system automatically:
 - ✅ Builds and starts Docker containers
@@ -123,11 +170,7 @@ webrtc-detection/
 3. Place the downloaded `.onnx` files in both directories
 4. Rename files to `yolov5n.onnx` and `yolov8n.onnx`
 
-### Available Start Modes
-```bash
-./start.sh wasm      # Client-side inference (default)
-./start.sh server    # Server-side inference
-```
+
 
 ### Docker Compose (Recommended)
 ```bash
