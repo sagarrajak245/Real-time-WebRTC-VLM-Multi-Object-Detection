@@ -1,6 +1,6 @@
 # --- Stage 1: Builder ---
 # This stage has all the tools needed to compile native dependencies
-FROM node:20-slim as builder
+FROM node:20-slim AS builder
 
 # Install essential build tools
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -15,8 +15,11 @@ WORKDIR /usr/src/app
 # Copy package files
 COPY package*.json ./
 
-# Install all dependencies using the more reliable CPU-specific onnxruntime package
-RUN npm install
+# Set environment variable to force CPU-only install for onnxruntime-node
+ENV ORT_FORCE_CPU=true
+
+# Install all dependencies with verbose output to help debug issues
+RUN npm install --verbose
 
 # --- Stage 2: Production ---
 # This is the final, clean image for running the application
